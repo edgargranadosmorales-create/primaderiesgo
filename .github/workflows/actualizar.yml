@@ -1,6 +1,12 @@
 name: Actualizar diferencial diario
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/actualizar.yml'
+      - 'actualizar.py'
+      - 'requirements.txt'
   schedule:
     - cron: '30 1 * * *'
   workflow_dispatch:
@@ -15,25 +21,26 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Descargar archivos del repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Instalar dependencias
         run: pip install -r requirements.txt
-
-      - name: Consultar datos y generar gráfico
+      - name: Consultar datos y generar HTML
         run: python actualizar.py
-
       - name: Guardar HTML y datos
         run: |
           git config user.name 'dashboard-bot'
           git config user.email 'dashboard-bot@users.noreply.github.com'
           git add index.html data/
           git diff --cached --quiet || (git commit -m 'Actualizar mercado' && git push)
+      - name: Conservar dashboard como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: |
+            index.html
+            data/
+          retention-days: 30
